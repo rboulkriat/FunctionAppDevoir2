@@ -1,0 +1,92 @@
+trigger: none  # Pas de déclenchement automatique
+
+stages:
+  - stage: deploy_function_app
+    displayName: 'Deploy Function App'
+    jobs:
+      - deployment: FunctionAppDeployment
+        displayName: 'Function App Deployment'
+        environment: 'Production'
+        pool:
+          name: 'AgentPool'  # Nom de votre pool d'agents auto-hébergés
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  clean: true
+
+                # Créer le fichier zip du projet FonctionAppToto
+                - task: ArchiveFiles@2
+                  displayName: 'Create project zip'
+                  inputs:
+                    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/'  # Chemin vers le dossier du projet FonctionAppToto
+                    includeRootFolder: false
+                    archiveType: 'zip'
+                    archiveFile: '$(Build.ArtifactStagingDirectory)/functionapp.zip'  # Fichier ZIP contenant l'application
+                    replaceExistingArchive: true
+
+                # Publier l'artefact zip pour la prochaine étape
+                - task: PublishPipelineArtifact@1
+                  displayName: 'Publish zip artifact'
+                  inputs:
+                    targetPath: '$(Build.ArtifactStagingDirectory)/functionapp.zip'
+                    publishLocation: 'pipeline'
+      
+                # Déployer l'Azure Function App
+                - task: AzureFunctionApp@1
+                  displayName: 'Deploy Function App'
+                  inputs:
+                    azureSubscription: 'Pay as you go'  # Nom de la connexion à votre abonnement Azure
+                    appType: 'functionapp'  # Type d'application : Azure Function App
+                    resourceGroupName: 'NetworkWatcherRG'  # Groupe de ressources
+                    appName: 'devoir2functionAppCloud'  # Nom de la Function App dans Azure
+                    package: '$(Build.ArtifactStagingDirectory)/functionapp.zip'  # Le fichier zip contenant l'application
+                    deploymentMethod: 'zipDeploy'  # Méthode de déploiement (zip)
+                    appSettings: |
+                      -name "BlobConnection" -value "$(StorageAccountConnectionString)"
+                      -name "ServiceBusConnection" -value "$(ServiceBusConnectionString)"
+
+  # Compilation du projet Function App (si nécessaire)
+  - stage: compile_function_app
+    dependsOn: deploy_function_app  # Cette étape dépend de la réussite du déploiement
+    jobs:
+      - job: CompileFunctionApp
+        displayName: 'Compile Function App'
+        pool:
+          name: 'AgentPool'  # Nom de votre pool d'agents auto-hébergés
+        steps:
+          - checkout: self
+            clean: true
+
+          # Compilation du projet .NET (ou autre, selon votre technologie)
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore, Build and Publish'
+            inputs:
+              command: 'restore'
+              projects: '$(System.DefaultWorkingDirectory)/FonctionAppToto.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
+              feedsToUse: 'select'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Project'
+            inputs:
+              command: 'build'
+              projects: '$(System.DefaultWorkingDirectory)/FonctionAppToto.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
+              arguments: '--configuration Release'
+
+          # Créer le fichier zip du projet après compilation
+          - task: ArchiveFiles@2
+            displayName: 'Create project zip after compilation'
+            inputs:
+              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/'  # Répertoire après compilation
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/functionapp_compiled.zip'  # Fichier ZIP contenant l'application compilée
+              replaceExistingArchive: true
+
+          # Publier l'artefact zip pour la prochaine étape
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish compiled zip artifact'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/functionapp_compiled.zip'
+              publishLocation: 'pipeline'
