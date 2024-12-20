@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "FunctionAppDevoir2": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7036",
+      "launchBrowser": false
+    }
+  }
+}
