@@ -16,7 +16,7 @@ namespace azureBusFonction
         private const string QueueName = "messagequeue";
 
         // Connexion à Azure Blob Storage
-        private const string BlobConnectionString = "YourBlobConnectionString";
+        private const string BlobConnectionString = "BlobConnection";
         private const string InputContainerName = "images";
         private const string OutputContainerName = "processed-images";
 
