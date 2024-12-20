@@ -64,14 +64,14 @@ stages:
             displayName: 'Restore, Build and Publish'
             inputs:
               command: 'restore'
-              projects: '$(System.DefaultWorkingDirectory)/FonctionAppToto.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
+              projects: '$(System.DefaultWorkingDirectory)/FunctionAppDevoir2.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
               feedsToUse: 'select'
 
           - task: DotNetCoreCLI@2
             displayName: 'Build Project'
             inputs:
               command: 'build'
-              projects: '$(System.DefaultWorkingDirectory)/FonctionAppToto.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
+              projects: '$(System.DefaultWorkingDirectory)/FunctionAppDevoir2.csproj'  # Tous les fichiers .csproj dans le répertoire du projet
               arguments: '--configuration Release'
 
           # Créer le fichier zip du projet après compilation
